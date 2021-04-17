@@ -816,7 +816,7 @@ impl PathBuf {
     /// p.pop();
     /// assert_eq!(Path::new("/"), p);
     /// ```
-        pub fn pop(&mut self) -> bool {
+    pub fn pop(&mut self) -> bool {
         match self.parent().map(|p| p.as_str().len()) {
             Some(len) => {
                 self.as_mut_string().truncate(len);
@@ -851,7 +851,7 @@ impl PathBuf {
     /// buf.set_file_name("baz.txt");
     /// assert!(buf == PathBuf::from("/baz.txt"));
     /// ```
-        pub fn set_file_name<S: AsRef<str>>(&mut self, file_name: S) {
+    pub fn set_file_name<S: AsRef<str>>(&mut self, file_name: S) {
         self._set_file_name(file_name.as_ref())
     }
 
@@ -1091,6 +1091,12 @@ impl<P: AsRef<Path>> iter::Extend<P> for PathBuf {
 impl fmt::Debug for PathBuf {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(&**self, formatter)
+    }
+}
+
+impl fmt::Display for PathBuf {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&**self, formatter)
     }
 }
 
@@ -1815,8 +1821,8 @@ impl fmt::Debug for Path {
 }
 
 impl fmt::Display for Path {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", &self.inner)
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.inner, formatter)
     }
 }
 

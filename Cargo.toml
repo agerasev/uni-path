@@ -1,6 +1,6 @@
 [package]
 name = "uni-path"
-version = "1.51.0"
+version = "1.51.1"
 authors = ["Alexey Gerasev", "The Rust Project Developers"]
 license = "MIT OR Apache-2.0"
 edition = "2018"
