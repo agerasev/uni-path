@@ -1,7 +1,7 @@
 use super::*;
 
-use crate::rc::Rc;
-use crate::sync::Arc;
+use std::rc::Rc;
+use std::sync::Arc;
 
 macro_rules! t(
     ($path:expr, iter: $iter:expr) => (
@@ -10,7 +10,7 @@ macro_rules! t(
 
             // Forward iteration
             let comps = path.iter()
-                .map(|p| p.to_string_lossy().into_owned())
+                .map(|p| p.to_string())
                 .collect::<Vec<String>>();
             let exp: &[&str] = &$iter;
             let exps = exp.iter().map(|s| s.to_string()).collect::<Vec<String>>();
@@ -19,7 +19,7 @@ macro_rules! t(
 
             // Reverse iteration
             let comps = Path::new($path).iter().rev()
-                .map(|p| p.to_string_lossy().into_owned())
+                .map(|p| p.to_string())
                 .collect::<Vec<String>>();
             let exps = exps.into_iter().rev().collect::<Vec<String>>();
             assert!(comps == exps, "iter().rev(): Expected {:?}, found {:?}",
@@ -45,12 +45,12 @@ macro_rules! t(
         {
             let path = Path::new($path);
 
-            let parent = path.parent().map(|p| p.to_str().unwrap());
+            let parent = path.parent().map(|p| p.to_str());
             let exp_parent: Option<&str> = $parent;
             assert!(parent == exp_parent, "parent: Expected {:?}, found {:?}",
                     exp_parent, parent);
 
-            let file = path.file_name().map(|p| p.to_str().unwrap());
+            let file = path.file_name();
             let exp_file: Option<&str> = $file;
             assert!(file == exp_file, "file_name: Expected {:?}, found {:?}",
                     exp_file, file);
@@ -61,12 +61,12 @@ macro_rules! t(
         {
             let path = Path::new($path);
 
-            let stem = path.file_stem().map(|p| p.to_str().unwrap());
+            let stem = path.file_stem();
             let exp_stem: Option<&str> = $file_stem;
             assert!(stem == exp_stem, "file_stem: Expected {:?}, found {:?}",
                     exp_stem, stem);
 
-            let ext = path.extension().map(|p| p.to_str().unwrap());
+            let ext = path.extension();
             let exp_ext: Option<&str> = $extension;
             assert!(ext == exp_ext, "extension: Expected {:?}, found {:?}",
                     exp_ext, ext);
@@ -88,7 +88,7 @@ macro_rules! t(
 
 #[test]
 fn into() {
-    use crate::borrow::Cow;
+    use std::borrow::Cow;
 
     let static_path = Path::new("/home/foo");
     let static_cow_path: Cow<'static, Path> = static_path.into();
@@ -107,7 +107,6 @@ fn into() {
 }
 
 #[test]
-#[cfg(unix)]
 pub fn test_decompositions_unix() {
     t!("",
     iter: [],
@@ -381,539 +380,6 @@ pub fn test_decompositions_unix() {
 }
 
 #[test]
-#[cfg(windows)]
-pub fn test_decompositions_windows() {
-    t!("",
-    iter: [],
-    has_root: false,
-    is_absolute: false,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("foo",
-    iter: ["foo"],
-    has_root: false,
-    is_absolute: false,
-    parent: Some(""),
-    file_name: Some("foo"),
-    file_stem: Some("foo"),
-    extension: None
-    );
-
-    t!("/",
-    iter: ["\\"],
-    has_root: true,
-    is_absolute: false,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("\\",
-    iter: ["\\"],
-    has_root: true,
-    is_absolute: false,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("c:",
-    iter: ["c:"],
-    has_root: false,
-    is_absolute: false,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("c:\\",
-    iter: ["c:", "\\"],
-    has_root: true,
-    is_absolute: true,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("c:/",
-    iter: ["c:", "\\"],
-    has_root: true,
-    is_absolute: true,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("/foo",
-    iter: ["\\", "foo"],
-    has_root: true,
-    is_absolute: false,
-    parent: Some("/"),
-    file_name: Some("foo"),
-    file_stem: Some("foo"),
-    extension: None
-    );
-
-    t!("foo/",
-    iter: ["foo"],
-    has_root: false,
-    is_absolute: false,
-    parent: Some(""),
-    file_name: Some("foo"),
-    file_stem: Some("foo"),
-    extension: None
-    );
-
-    t!("/foo/",
-    iter: ["\\", "foo"],
-    has_root: true,
-    is_absolute: false,
-    parent: Some("/"),
-    file_name: Some("foo"),
-    file_stem: Some("foo"),
-    extension: None
-    );
-
-    t!("foo/bar",
-    iter: ["foo", "bar"],
-    has_root: false,
-    is_absolute: false,
-    parent: Some("foo"),
-    file_name: Some("bar"),
-    file_stem: Some("bar"),
-    extension: None
-    );
-
-    t!("/foo/bar",
-    iter: ["\\", "foo", "bar"],
-    has_root: true,
-    is_absolute: false,
-    parent: Some("/foo"),
-    file_name: Some("bar"),
-    file_stem: Some("bar"),
-    extension: None
-    );
-
-    t!("///foo///",
-    iter: ["\\", "foo"],
-    has_root: true,
-    is_absolute: false,
-    parent: Some("/"),
-    file_name: Some("foo"),
-    file_stem: Some("foo"),
-    extension: None
-    );
-
-    t!("///foo///bar",
-    iter: ["\\", "foo", "bar"],
-    has_root: true,
-    is_absolute: false,
-    parent: Some("///foo"),
-    file_name: Some("bar"),
-    file_stem: Some("bar"),
-    extension: None
-    );
-
-    t!("./.",
-    iter: ["."],
-    has_root: false,
-    is_absolute: false,
-    parent: Some(""),
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("/..",
-    iter: ["\\", ".."],
-    has_root: true,
-    is_absolute: false,
-    parent: Some("/"),
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("../",
-    iter: [".."],
-    has_root: false,
-    is_absolute: false,
-    parent: Some(""),
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("foo/.",
-    iter: ["foo"],
-    has_root: false,
-    is_absolute: false,
-    parent: Some(""),
-    file_name: Some("foo"),
-    file_stem: Some("foo"),
-    extension: None
-    );
-
-    t!("foo/..",
-    iter: ["foo", ".."],
-    has_root: false,
-    is_absolute: false,
-    parent: Some("foo"),
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("foo/./",
-    iter: ["foo"],
-    has_root: false,
-    is_absolute: false,
-    parent: Some(""),
-    file_name: Some("foo"),
-    file_stem: Some("foo"),
-    extension: None
-    );
-
-    t!("foo/./bar",
-    iter: ["foo", "bar"],
-    has_root: false,
-    is_absolute: false,
-    parent: Some("foo"),
-    file_name: Some("bar"),
-    file_stem: Some("bar"),
-    extension: None
-    );
-
-    t!("foo/../",
-    iter: ["foo", ".."],
-    has_root: false,
-    is_absolute: false,
-    parent: Some("foo"),
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("foo/../bar",
-    iter: ["foo", "..", "bar"],
-    has_root: false,
-    is_absolute: false,
-    parent: Some("foo/.."),
-    file_name: Some("bar"),
-    file_stem: Some("bar"),
-    extension: None
-    );
-
-    t!("./a",
-    iter: [".", "a"],
-    has_root: false,
-    is_absolute: false,
-    parent: Some("."),
-    file_name: Some("a"),
-    file_stem: Some("a"),
-    extension: None
-    );
-
-    t!(".",
-    iter: ["."],
-    has_root: false,
-    is_absolute: false,
-    parent: Some(""),
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("./",
-    iter: ["."],
-    has_root: false,
-    is_absolute: false,
-    parent: Some(""),
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("a/b",
-    iter: ["a", "b"],
-    has_root: false,
-    is_absolute: false,
-    parent: Some("a"),
-    file_name: Some("b"),
-    file_stem: Some("b"),
-    extension: None
-    );
-
-    t!("a//b",
-    iter: ["a", "b"],
-    has_root: false,
-    is_absolute: false,
-    parent: Some("a"),
-    file_name: Some("b"),
-    file_stem: Some("b"),
-    extension: None
-    );
-
-    t!("a/./b",
-    iter: ["a", "b"],
-    has_root: false,
-    is_absolute: false,
-    parent: Some("a"),
-    file_name: Some("b"),
-    file_stem: Some("b"),
-    extension: None
-    );
-
-    t!("a/b/c",
-       iter: ["a", "b", "c"],
-       has_root: false,
-       is_absolute: false,
-       parent: Some("a/b"),
-       file_name: Some("c"),
-       file_stem: Some("c"),
-       extension: None);
-
-    t!("a\\b\\c",
-    iter: ["a", "b", "c"],
-    has_root: false,
-    is_absolute: false,
-    parent: Some("a\\b"),
-    file_name: Some("c"),
-    file_stem: Some("c"),
-    extension: None
-    );
-
-    t!("\\a",
-    iter: ["\\", "a"],
-    has_root: true,
-    is_absolute: false,
-    parent: Some("\\"),
-    file_name: Some("a"),
-    file_stem: Some("a"),
-    extension: None
-    );
-
-    t!("c:\\foo.txt",
-    iter: ["c:", "\\", "foo.txt"],
-    has_root: true,
-    is_absolute: true,
-    parent: Some("c:\\"),
-    file_name: Some("foo.txt"),
-    file_stem: Some("foo"),
-    extension: Some("txt")
-    );
-
-    t!("\\\\server\\share\\foo.txt",
-    iter: ["\\\\server\\share", "\\", "foo.txt"],
-    has_root: true,
-    is_absolute: true,
-    parent: Some("\\\\server\\share\\"),
-    file_name: Some("foo.txt"),
-    file_stem: Some("foo"),
-    extension: Some("txt")
-    );
-
-    t!("\\\\server\\share",
-    iter: ["\\\\server\\share", "\\"],
-    has_root: true,
-    is_absolute: true,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("\\\\server",
-    iter: ["\\", "server"],
-    has_root: true,
-    is_absolute: false,
-    parent: Some("\\"),
-    file_name: Some("server"),
-    file_stem: Some("server"),
-    extension: None
-    );
-
-    t!("\\\\?\\bar\\foo.txt",
-    iter: ["\\\\?\\bar", "\\", "foo.txt"],
-    has_root: true,
-    is_absolute: true,
-    parent: Some("\\\\?\\bar\\"),
-    file_name: Some("foo.txt"),
-    file_stem: Some("foo"),
-    extension: Some("txt")
-    );
-
-    t!("\\\\?\\bar",
-    iter: ["\\\\?\\bar"],
-    has_root: true,
-    is_absolute: true,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("\\\\?\\",
-    iter: ["\\\\?\\"],
-    has_root: true,
-    is_absolute: true,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("\\\\?\\UNC\\server\\share\\foo.txt",
-    iter: ["\\\\?\\UNC\\server\\share", "\\", "foo.txt"],
-    has_root: true,
-    is_absolute: true,
-    parent: Some("\\\\?\\UNC\\server\\share\\"),
-    file_name: Some("foo.txt"),
-    file_stem: Some("foo"),
-    extension: Some("txt")
-    );
-
-    t!("\\\\?\\UNC\\server",
-    iter: ["\\\\?\\UNC\\server"],
-    has_root: true,
-    is_absolute: true,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("\\\\?\\UNC\\",
-    iter: ["\\\\?\\UNC\\"],
-    has_root: true,
-    is_absolute: true,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("\\\\?\\C:\\foo.txt",
-    iter: ["\\\\?\\C:", "\\", "foo.txt"],
-    has_root: true,
-    is_absolute: true,
-    parent: Some("\\\\?\\C:\\"),
-    file_name: Some("foo.txt"),
-    file_stem: Some("foo"),
-    extension: Some("txt")
-    );
-
-    t!("\\\\?\\C:\\",
-    iter: ["\\\\?\\C:", "\\"],
-    has_root: true,
-    is_absolute: true,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("\\\\?\\C:",
-    iter: ["\\\\?\\C:"],
-    has_root: true,
-    is_absolute: true,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("\\\\?\\foo/bar",
-    iter: ["\\\\?\\foo/bar"],
-    has_root: true,
-    is_absolute: true,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("\\\\?\\C:/foo",
-    iter: ["\\\\?\\C:/foo"],
-    has_root: true,
-    is_absolute: true,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("\\\\.\\foo\\bar",
-    iter: ["\\\\.\\foo", "\\", "bar"],
-    has_root: true,
-    is_absolute: true,
-    parent: Some("\\\\.\\foo\\"),
-    file_name: Some("bar"),
-    file_stem: Some("bar"),
-    extension: None
-    );
-
-    t!("\\\\.\\foo",
-    iter: ["\\\\.\\foo", "\\"],
-    has_root: true,
-    is_absolute: true,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("\\\\.\\foo/bar",
-    iter: ["\\\\.\\foo", "\\", "bar"],
-    has_root: true,
-    is_absolute: true,
-    parent: Some("\\\\.\\foo/"),
-    file_name: Some("bar"),
-    file_stem: Some("bar"),
-    extension: None
-    );
-
-    t!("\\\\.\\foo\\bar/baz",
-    iter: ["\\\\.\\foo", "\\", "bar", "baz"],
-    has_root: true,
-    is_absolute: true,
-    parent: Some("\\\\.\\foo\\bar"),
-    file_name: Some("baz"),
-    file_stem: Some("baz"),
-    extension: None
-    );
-
-    t!("\\\\.\\",
-    iter: ["\\\\.\\", "\\"],
-    has_root: true,
-    is_absolute: true,
-    parent: None,
-    file_name: None,
-    file_stem: None,
-    extension: None
-    );
-
-    t!("\\\\?\\a\\b\\",
-    iter: ["\\\\?\\a", "\\", "b"],
-    has_root: true,
-    is_absolute: true,
-    parent: Some("\\\\?\\a\\"),
-    file_name: Some("b"),
-    file_stem: Some("b"),
-    extension: None
-    );
-}
-
-#[test]
 pub fn test_stem_ext() {
     t!("foo",
     file_stem: Some("foo"),
@@ -958,86 +424,25 @@ pub fn test_push() {
         ($path:expr, $push:expr, $expected:expr) => ( {
             let mut actual = PathBuf::from($path);
             actual.push($push);
-            assert!(actual.to_str() == Some($expected),
+            assert!(actual.to_str() == $expected,
                     "pushing {:?} onto {:?}: Expected {:?}, got {:?}",
-                    $push, $path, $expected, actual.to_str().unwrap());
+                    $push, $path, $expected, actual.to_str());
         });
     );
 
-    if cfg!(unix) || cfg!(all(target_env = "sgx", target_vendor = "fortanix")) {
-        tp!("", "foo", "foo");
-        tp!("foo", "bar", "foo/bar");
-        tp!("foo/", "bar", "foo/bar");
-        tp!("foo//", "bar", "foo//bar");
-        tp!("foo/.", "bar", "foo/./bar");
-        tp!("foo./.", "bar", "foo././bar");
-        tp!("foo", "", "foo/");
-        tp!("foo", ".", "foo/.");
-        tp!("foo", "..", "foo/..");
-        tp!("foo", "/", "/");
-        tp!("/foo/bar", "/", "/");
-        tp!("/foo/bar", "/baz", "/baz");
-        tp!("/foo/bar", "./baz", "/foo/bar/./baz");
-    } else {
-        tp!("", "foo", "foo");
-        tp!("foo", "bar", r"foo\bar");
-        tp!("foo/", "bar", r"foo/bar");
-        tp!(r"foo\", "bar", r"foo\bar");
-        tp!("foo//", "bar", r"foo//bar");
-        tp!(r"foo\\", "bar", r"foo\\bar");
-        tp!("foo/.", "bar", r"foo/.\bar");
-        tp!("foo./.", "bar", r"foo./.\bar");
-        tp!(r"foo\.", "bar", r"foo\.\bar");
-        tp!(r"foo.\.", "bar", r"foo.\.\bar");
-        tp!("foo", "", "foo\\");
-        tp!("foo", ".", r"foo\.");
-        tp!("foo", "..", r"foo\..");
-        tp!("foo", "/", "/");
-        tp!("foo", r"\", r"\");
-        tp!("/foo/bar", "/", "/");
-        tp!(r"\foo\bar", r"\", r"\");
-        tp!("/foo/bar", "/baz", "/baz");
-        tp!("/foo/bar", r"\baz", r"\baz");
-        tp!("/foo/bar", "./baz", r"/foo/bar\./baz");
-        tp!("/foo/bar", r".\baz", r"/foo/bar\.\baz");
-
-        tp!("c:\\", "windows", "c:\\windows");
-        tp!("c:", "windows", "c:windows");
-
-        tp!("a\\b\\c", "d", "a\\b\\c\\d");
-        tp!("\\a\\b\\c", "d", "\\a\\b\\c\\d");
-        tp!("a\\b", "c\\d", "a\\b\\c\\d");
-        tp!("a\\b", "\\c\\d", "\\c\\d");
-        tp!("a\\b", ".", "a\\b\\.");
-        tp!("a\\b", "..\\c", "a\\b\\..\\c");
-        tp!("a\\b", "C:a.txt", "C:a.txt");
-        tp!("a\\b", "C:\\a.txt", "C:\\a.txt");
-        tp!("C:\\a", "C:\\b.txt", "C:\\b.txt");
-        tp!("C:\\a\\b\\c", "C:d", "C:d");
-        tp!("C:a\\b\\c", "C:d", "C:d");
-        tp!("C:", r"a\b\c", r"C:a\b\c");
-        tp!("C:", r"..\a", r"C:..\a");
-        tp!("\\\\server\\share\\foo", "bar", "\\\\server\\share\\foo\\bar");
-        tp!("\\\\server\\share\\foo", "C:baz", "C:baz");
-        tp!("\\\\?\\C:\\a\\b", "C:c\\d", "C:c\\d");
-        tp!("\\\\?\\C:a\\b", "C:c\\d", "C:c\\d");
-        tp!("\\\\?\\C:\\a\\b", "C:\\c\\d", "C:\\c\\d");
-        tp!("\\\\?\\foo\\bar", "baz", "\\\\?\\foo\\bar\\baz");
-        tp!("\\\\?\\UNC\\server\\share\\foo", "bar", "\\\\?\\UNC\\server\\share\\foo\\bar");
-        tp!("\\\\?\\UNC\\server\\share", "C:\\a", "C:\\a");
-        tp!("\\\\?\\UNC\\server\\share", "C:a", "C:a");
-
-        // Note: modified from old path API
-        tp!("\\\\?\\UNC\\server", "foo", "\\\\?\\UNC\\server\\foo");
-
-        tp!("C:\\a", "\\\\?\\UNC\\server\\share", "\\\\?\\UNC\\server\\share");
-        tp!("\\\\.\\foo\\bar", "baz", "\\\\.\\foo\\bar\\baz");
-        tp!("\\\\.\\foo\\bar", "C:a", "C:a");
-        // again, not sure about the following, but I'm assuming \\.\ should be verbatim
-        tp!("\\\\.\\foo", "..\\bar", "\\\\.\\foo\\..\\bar");
-
-        tp!("\\\\?\\C:", "foo", "\\\\?\\C:\\foo"); // this is a weird one
-    }
+    tp!("", "foo", "foo");
+    tp!("foo", "bar", "foo/bar");
+    tp!("foo/", "bar", "foo/bar");
+    tp!("foo//", "bar", "foo//bar");
+    tp!("foo/.", "bar", "foo/./bar");
+    tp!("foo./.", "bar", "foo././bar");
+    tp!("foo", "", "foo/");
+    tp!("foo", ".", "foo/.");
+    tp!("foo", "..", "foo/..");
+    tp!("foo", "/", "/");
+    tp!("/foo/bar", "/", "/");
+    tp!("/foo/bar", "/baz", "/baz");
+    tp!("/foo/bar", "./baz", "/foo/bar/./baz");
 }
 
 #[test]
@@ -1046,10 +451,10 @@ pub fn test_pop() {
         ($path:expr, $expected:expr, $output:expr) => ( {
             let mut actual = PathBuf::from($path);
             let output = actual.pop();
-            assert!(actual.to_str() == Some($expected) && output == $output,
+            assert!(actual.to_str() == $expected && output == $output,
                     "popping from {:?}: Expected {:?}/{:?}, got {:?}/{:?}",
                     $path, $expected, $output,
-                    actual.to_str().unwrap(), output);
+                    actual.to_str(), output);
         });
     );
 
@@ -1062,36 +467,6 @@ pub fn test_pop() {
     tp!("foo/bar", "foo", true);
     tp!("foo/.", "", true);
     tp!("foo//bar", "foo", true);
-
-    if cfg!(windows) {
-        tp!("a\\b\\c", "a\\b", true);
-        tp!("\\a", "\\", true);
-        tp!("\\", "\\", false);
-
-        tp!("C:\\a\\b", "C:\\a", true);
-        tp!("C:\\a", "C:\\", true);
-        tp!("C:\\", "C:\\", false);
-        tp!("C:a\\b", "C:a", true);
-        tp!("C:a", "C:", true);
-        tp!("C:", "C:", false);
-        tp!("\\\\server\\share\\a\\b", "\\\\server\\share\\a", true);
-        tp!("\\\\server\\share\\a", "\\\\server\\share\\", true);
-        tp!("\\\\server\\share", "\\\\server\\share", false);
-        tp!("\\\\?\\a\\b\\c", "\\\\?\\a\\b", true);
-        tp!("\\\\?\\a\\b", "\\\\?\\a\\", true);
-        tp!("\\\\?\\a", "\\\\?\\a", false);
-        tp!("\\\\?\\C:\\a\\b", "\\\\?\\C:\\a", true);
-        tp!("\\\\?\\C:\\a", "\\\\?\\C:\\", true);
-        tp!("\\\\?\\C:\\", "\\\\?\\C:\\", false);
-        tp!("\\\\?\\UNC\\server\\share\\a\\b", "\\\\?\\UNC\\server\\share\\a", true);
-        tp!("\\\\?\\UNC\\server\\share\\a", "\\\\?\\UNC\\server\\share\\", true);
-        tp!("\\\\?\\UNC\\server\\share", "\\\\?\\UNC\\server\\share", false);
-        tp!("\\\\.\\a\\b\\c", "\\\\.\\a\\b", true);
-        tp!("\\\\.\\a\\b", "\\\\.\\a\\", true);
-        tp!("\\\\.\\a", "\\\\.\\a", false);
-
-        tp!("\\\\?\\a\\b\\", "\\\\?\\a\\", true);
-    }
 }
 
 #[test]
@@ -1100,10 +475,10 @@ pub fn test_set_file_name() {
             ($path:expr, $file:expr, $expected:expr) => ( {
             let mut p = PathBuf::from($path);
             p.set_file_name($file);
-            assert!(p.to_str() == Some($expected),
+            assert!(p.to_str() == $expected,
                     "setting file name of {:?} to {:?}: Expected {:?}, got {:?}",
                     $path, $file, $expected,
-                    p.to_str().unwrap());
+                    p.to_str());
         });
     );
 
@@ -1111,21 +486,13 @@ pub fn test_set_file_name() {
     tfn!("foo", "bar", "bar");
     tfn!("foo", "", "");
     tfn!("", "foo", "foo");
-    if cfg!(unix) || cfg!(all(target_env = "sgx", target_vendor = "fortanix")) {
-        tfn!(".", "foo", "./foo");
-        tfn!("foo/", "bar", "bar");
-        tfn!("foo/.", "bar", "bar");
-        tfn!("..", "foo", "../foo");
-        tfn!("foo/..", "bar", "foo/../bar");
-        tfn!("/", "foo", "/foo");
-    } else {
-        tfn!(".", "foo", r".\foo");
-        tfn!(r"foo\", "bar", r"bar");
-        tfn!(r"foo\.", "bar", r"bar");
-        tfn!("..", "foo", r"..\foo");
-        tfn!(r"foo\..", "bar", r"foo\..\bar");
-        tfn!(r"\", "foo", r"\foo");
-    }
+
+    tfn!(".", "foo", "./foo");
+    tfn!("foo/", "bar", "bar");
+    tfn!("foo/.", "bar", "bar");
+    tfn!("..", "foo", "../foo");
+    tfn!("foo/..", "bar", "foo/../bar");
+    tfn!("/", "foo", "/foo");
 }
 
 #[test]
@@ -1134,10 +501,10 @@ pub fn test_set_extension() {
             ($path:expr, $ext:expr, $expected:expr, $output:expr) => ( {
             let mut p = PathBuf::from($path);
             let output = p.set_extension($ext);
-            assert!(p.to_str() == Some($expected) && output == $output,
+            assert!(p.to_str() == $expected && output == $output,
                     "setting extension of {:?} to {:?}: Expected {:?}/{:?}, got {:?}/{:?}",
                     $path, $ext, $expected, $output,
-                    p.to_str().unwrap(), output);
+                    p.to_str(), output);
         });
     );
 
@@ -1158,7 +525,7 @@ pub fn test_set_extension() {
 
 #[test]
 fn test_eq_receivers() {
-    use crate::borrow::Cow;
+    use std::borrow::Cow;
 
     let borrowed: &Path = Path::new("foo/bar");
     let mut owned: PathBuf = PathBuf::new();
@@ -1183,8 +550,8 @@ fn test_eq_receivers() {
 
 #[test]
 pub fn test_compare() {
-    use crate::collections::hash_map::DefaultHasher;
-    use crate::hash::{Hash, Hasher};
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
 
     fn hash<T: Hash>(t: T) -> u64 {
         let mut s = DefaultHasher::new();
@@ -1217,7 +584,7 @@ pub fn test_compare() {
                      $ends_with, ends_with);
 
              let relative_from = path1.strip_prefix(path2)
-                                      .map(|p| p.to_str().unwrap())
+                                      .map(|p| p.to_str())
                                       .ok();
              let exp: Option<&str> = $relative_from;
              assert!(relative_from == exp,
@@ -1288,23 +655,6 @@ pub fn test_compare() {
     ends_with: false,
     relative_from: Some("foo/bar")
     );
-
-    if cfg!(windows) {
-        tc!(r"C:\src\rust\cargo-test\test\Cargo.toml",
-        r"c:\src\rust\cargo-test\test",
-        eq: false,
-        starts_with: true,
-        ends_with: false,
-        relative_from: Some("Cargo.toml")
-        );
-
-        tc!(r"c:\foo", r"C:\foo",
-        eq: true,
-        starts_with: true,
-        ends_with: true,
-        relative_from: Some("")
-        );
-    }
 }
 
 #[test]
@@ -1361,20 +711,13 @@ fn into_boxed() {
     assert_eq!(&*path_buf, path);
 }
 
-#[test]
-fn test_clone_into() {
-    let mut path_buf = PathBuf::from("supercalifragilisticexpialidocious");
-    let path = Path::new("short");
-    path.clone_into(&mut path_buf);
-    assert_eq!(path, path_buf);
-    assert!(path_buf.into_os_string().capacity() >= 15);
-}
-
+/*
 #[test]
 fn display_format_flags() {
     assert_eq!(format!("a{:#<5}b", Path::new("").display()), "a#####b");
     assert_eq!(format!("a{:#<5}b", Path::new("a").display()), "aa####b");
 }
+*/
 
 #[test]
 fn into_rc() {
