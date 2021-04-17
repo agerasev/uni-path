@@ -1349,10 +1349,10 @@ impl Path {
     /// use uni_path::Path;
     ///
     /// let path = Path::new("foo.txt");
-    /// assert_eq!(path.to_string(), "foo.txt");
+    /// assert_eq!(path.to_str_cow(), "foo.txt");
     /// ```
     #[inline]
-    pub fn to_string(&self) -> Cow<'_, str> {
+    pub fn to_str_cow(&self) -> Cow<'_, str> {
         Cow::from(&self.inner)
     }
 

@@ -4,5 +4,12 @@ version = "1.51.0"
 authors = ["Alexey Gerasev", "The Rust Project Developers"]
 license = "MIT OR Apache-2.0"
 edition = "2018"
+description = "Platform-independent path manipulation"
+documentation = "https://docs.rs/uni-path"
+homepage = "https://github.com/agerasev/uni-path"
+repository = "https://github.com/agerasev/uni-path.git"
+readme = "README.md"
+keywords = ["path"]
+categories = ["filesystem"]
 
 [dependencies]
